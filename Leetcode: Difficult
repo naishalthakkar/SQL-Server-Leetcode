@@ -118,3 +118,91 @@ SELECT e.exam_id,MIN(e.score) AS 'score'
 FROM Student s
 JOIN Exam e ON s.student_id=e.student_id
 GROUP BY e.exam_id) b ON a.exam_id=b.exam_id AND a.score=b.score)
+
+
+LEETCODE 1384
+
+Write an SQL query to report the Total sales amount of each item for each year, with corresponding product name, product_id, product_name and report_year.
+
+Dates of the sales years are between 2018 to 2020. Return the result table ordered by product_id and report_year.
+
+The query result format is in the following example:
+
+Product table:
++------------+--------------+
+| product_id | product_name |
++------------+--------------+
+| 1          | LC Phone     |
+| 2          | LC T-Shirt   |
+| 3          | LC Keychain  |
++------------+--------------+
+
+Sales table:
++------------+--------------+-------------+---------------------+
+| product_id | period_start | period_end  | average_daily_sales |
++------------+--------------+-------------+---------------------+
+| 1          | 2019-01-25   | 2019-02-28  | 100                 |
+| 2          | 2018-12-01   | 2020-01-01  | 10                  |
+| 3          | 2019-12-01   | 2020-01-31  | 1                   |
++------------+--------------+-------------+---------------------+
+
+Result table:
++------------+--------------+-------------+--------------+
+| product_id | product_name | report_year | total_amount |
++------------+--------------+-------------+--------------+
+| 1          | LC Phone     |    2019     | 3500         |
+| 2          | LC T-Shirt   |    2018     | 310          |
+| 2          | LC T-Shirt   |    2019     | 3650         |
+| 2          | LC T-Shirt   |    2020     | 10           |
+| 3          | LC Keychain  |    2019     | 31           |
+| 3          | LC Keychain  |    2020     | 31           |
++------------+--------------+-------------+--------------+
+
+
+GO
+CREATE view v AS
+(SELECT product_id, '2018' AS report_year,
+       CASE
+       WHEN period_start >= '2019-01-01' THEN 0
+       WHEN period_end < '2019-01-01' AND period_start < '2019-01-01' THEN  DATEDIFF(day,period_start, period_end)+1
+       ELSE DATEDIFF(day,period_start,'2019-01-01')
+       END AS days_in_year,
+       average_daily_sales
+FROM Sales 
+
+UNION
+
+SELECT product_id, '2019' AS report_year,
+       CASE
+       WHEN period_start >= '2020-01-01' THEN 0
+       WHEN period_end BETWEEN '2018-12-31' AND '2020-01-01' AND period_start BETWEEN '2018-12-31' AND '2020-01-01'  THEN  DATEDIFF(day,period_start, period_end)+1
+       WHEN period_start BETWEEN '2018-12-31' AND '2020-01-01' AND period_end >= '2020-01-01' THEN DATEDIFF(day,period_start,'2020-01-01')
+       WHEN period_start < '2019-01-01' AND period_end >= '2020-01-01' THEN DATEDIFF(day,'2019-01-01','2020-01-01')
+	   WHEN period_start < '2019-01-01' AND period_end BETWEEN '2018-12-31' AND '2020-01-01' THEN DATEDIFF(day,'2019-01-01',period_end)+1
+	   ELSE 0
+	   END AS days_in_year,
+       average_daily_sales
+FROM Sales 
+
+UNION
+
+SELECT product_id, '2020' AS report_year,
+       CASE
+       WHEN period_start >= '2021-01-01' THEN 0
+       WHEN period_end BETWEEN '2019-12-31' AND '2021-01-01' AND period_start BETWEEN '2019-12-31' AND '2021-01-01'  THEN  DATEDIFF(day,period_start, period_end)+1
+       WHEN period_start BETWEEN '2019-12-31' AND '2021-01-01' AND period_end >= '2021-01-01' THEN DATEDIFF(day,period_start,'2021-01-01')
+       WHEN period_start < '2020-01-01' AND period_end >= '2021-01-01' THEN DATEDIFF(day,'2020-01-01','2021-01-01')
+	   WHEN period_start < '2020-01-01' AND period_end BETWEEN '2019-12-31' AND '2021-01-01' THEN DATEDIFF(day,'2020-01-01',period_end)+1
+	   ELSE 0
+	   END AS days_in_year,
+       average_daily_sales
+FROM Sales) 
+GO
+
+SELECT p.product_id,p.product_name,v.report_year,v.days_in_year*v.average_daily_sales AS 'total_amount'
+FROM Product p
+JOIN Sales s 
+ON p.product_id=s.product_id
+JOIN v
+ON s.product_id=v.product_id
+WHERE v.days_in_year!=0
