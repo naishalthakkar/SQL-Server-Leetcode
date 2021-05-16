@@ -404,16 +404,12 @@ Result table:
 | 4           | 1          | keyboard     |
 +-------------+------------+--------------+
 
-CREATE VIEW v1 AS
-SELECT customer_id,product_id,COUNT(*) AS 'count'
+SELECT customer_id,Products.product_id,product_name
+FROM
+(SELECT customer_id,product_id,order_count,RANK() OVER (PARTITION BY customer_id ORDER BY order_count DESC) AS 'rank'
+FROM
+(SELECT customer_id,product_id,COUNT(DISTINCT order_id) AS 'order_count'
 FROM Orders
-GROUP BY customer_id,product_id
-
-SELECT v1.customer_id,v1.product_id,p.product_name
-FROM v1 JOIN Products p on p.product_id=v1.product_id
-JOIN 
-(SELECT customer_id,MAX(count) AS 'count'
-FROM v1 
-GROUP BY customer_id) A
-ON v1.customer_id=A.customer_id AND v1.count=A.count
-ORDER BY v1.customer_id,v1.product_id
+GROUP BY customer_id,product_id) as table1) AS order_counts_ranked 
+JOIN Products ON Products.product_id=order_counts_ranked.product_id
+WHERE rank=1
