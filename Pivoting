@@ -1,0 +1,25 @@
+name	city
+Sachin	Mumbai
+Virat	Delhi
+Rahul	Bangalore
+Rohit	Mumbai
+Mayank	Bangalore
+
+
+---------------------------------------------------------TRANSFORM-------------------------------------------------------------------
+
+player_groups	Bangalore	Mumbai	Delhi
+      1	        Mayank	Rohit	  Virat
+      2	        Rahul	 Sachin	  NULL
+
+
+
+
+SELECT player_groups,
+MAX(CASE WHEN city='Bangalore' THEN name end) as Bangalore,
+MAX(CASE WHEN city='Mumbai' THEN name end) as Mumbai,
+MAX(CASE WHEN city='Delhi' THEN name end) as Delhi
+FROM
+(SELECT *,ROW_NUMBER() OVER (PARTITION BY city ORDER BY name ASC) AS player_groups
+FROM players_location)A
+GROUP BY player_groups
