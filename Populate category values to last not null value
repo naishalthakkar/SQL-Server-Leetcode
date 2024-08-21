@@ -1,0 +1,32 @@
+category	brand_name                                          
+chocolates	5-star
+NULL	dairy milk
+NULL	perk
+NULL	eclair
+Biscuits	britannia
+NULL	good day
+NULL	boost        
+------------------------------------------------------------------TRANSFORM-------------------------------------------------------------------------------
+category	brand_name
+chocolates	5-star
+chocolates	dairy milk
+chocolates	perk
+chocolates	eclair
+biscuits	britannia
+biscuits	good day
+biscuits	boost
+
+---------------------------------------------------------------------------------------------------------------------
+
+WITH cte AS
+(SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT null)) AS rn
+FROM brands)
+
+SELECT A.category,cte.brand_name FROM
+(SELECT *, ISNULL(LEAD(rn) OVER (ORDER BY rn),9999) AS lead
+FROM cte
+WHERE category is not null)A
+
+JOIN cte ON cte.rn>=A.rn AND cte.rn<A.lead
+
+
