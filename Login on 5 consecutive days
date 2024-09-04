@@ -1,0 +1,54 @@
+user_id	   login_date
+1	       2024-03-01
+1	       2024-03-02
+1	       2024-03-03
+1	       2024-03-04
+1	       2024-03-06
+1	       2024-03-10
+1	       2024-03-11
+1	       2024-03-12
+1	       2024-03-13
+1	       2024-03-14
+1	       2024-03-20
+1	       2024-03-25
+1	       2024-03-26
+1	       2024-03-27
+1	       2024-03-28
+1	       2024-03-29
+1	       2024-03-30
+2	       2024-03-01
+2	       2024-03-02
+2	       2024-03-03
+2	       2024-03-04
+3	       2024-03-01
+3	       2024-03-02
+3	       2024-03-03
+3	       2024-03-04
+3	       2024-03-04
+3	       2024-03-04
+3	       2024-03-05
+4	       2024-03-01
+4	       2024-03-02
+4	       2024-03-03
+4	       2024-03-04
+4	       2024-03-04
+
+
+------------------------------------------------------------TRANSFORM ----------------------------------------------
+
+user_id	  start_date	    end_date
+3	      2024-03-01       2024-03-05
+1	      2024-03-10	     2024-03-14
+1	      2024-03-25	     2024-03-30
+
+
+WITH cte AS
+(SELECT *
+,DENSE_RANK() OVER (PARTITION BY user_id ORDER BY user_id,login_date) AS rank
+,DATEADD(day,-1*(DENSE_RANK() OVER (PARTITION BY user_id ORDER BY user_id,login_date)),login_date) as date_group
+FROM user_login)
+
+SELECT user_id, MIN(login_date) AS start_date, MAX(login_date) AS end_date
+FROM cte
+GROUP BY user_id,date_group
+HAVING DATEDIFF(day, MIN(login_date),MAX(login_date))>=4
